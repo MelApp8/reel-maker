@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SAMPLE DATA for offline testing only. Same shape as https://trends.google.com/trending/rss?geo=US -->
+<rss xmlns:ht="https://trends.google.com/trending/rss" version="2.0"><channel><title>Daily Search Trends (sample)</title>
+<item><title>Sample Topic Alpha</title><ht:approx_traffic>200,000+</ht:approx_traffic>
+ <ht:news_item><ht:news_item_title>Sample headline one about Sample Topic Alpha for testing the reel layout</ht:news_item_title><ht:news_item_source>Example News</ht:news_item_source><ht:news_item_url>https://example.com/a</ht:news_item_url></ht:news_item>
+ <ht:news_item><ht:news_item_title>Second sample headline that is a little longer so we can check that wrapping works on screen</ht:news_item_title><ht:news_item_source>Example Daily</ht:news_item_source><ht:news_item_url>https://example.com/b</ht:news_item_url></ht:news_item></item>
+<item><title>Sample sad story</title><ht:approx_traffic>100,000+</ht:approx_traffic>
+ <ht:news_item><ht:news_item_title>Someone died in a sample story (should be skipped)</ht:news_item_title><ht:news_item_source>Example</ht:news_item_source><ht:news_item_url>https://example.com/c</ht:news_item_url></ht:news_item></item>
+<item><title>Sample Topic Beta</title><ht:approx_traffic>50,000+</ht:approx_traffic>
+ <ht:news_item><ht:news_item_title>Sample Beta headline &amp; more details for testing</ht:news_item_title><ht:news_item_source>Example Times</ht:news_item_source><ht:news_item_url>https://example.com/d</ht:news_item_url></ht:news_item></item>
+</channel></rss>

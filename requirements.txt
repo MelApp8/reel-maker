@@ -1,0 +1,3 @@
+Pillow>=10
+imageio-ffmpeg>=0.5
+anthropic>=1.0   # optional: only used if you add ANTHROPIC_API_KEY for AI-written captions

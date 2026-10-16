@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Reel Maker">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<title>Reel Maker</title>
+<style>
+  :root { --bg:#0f1115; --card:#181b22; --line:#2a2f3a; --text:#f2f3f5; --muted:#9aa1ad; --accent:#ffd400; --pink:#ff2d55; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  header { padding:20px 16px 8px; max-width:1200px; margin:auto; }
+  h1 { margin:0 0 4px; font-size:24px; } h1 span { color:var(--accent); }
+  .sub { color:var(--muted); margin:0; }
+  .bar { max-width:1200px; margin:12px auto; padding:0 16px; display:flex; gap:8px; flex-wrap:wrap; }
+  input { flex:1 1 220px; background:var(--card); border:1px solid var(--line); color:var(--text); border-radius:10px; padding:11px 12px; font:inherit; }
+  button, a.btn { background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:10px; padding:10px 14px; font:inherit; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
+  button.primary { background:var(--accent); color:#111; border-color:var(--accent); font-weight:700; }
+  button:disabled { opacity:.5; cursor:wait; }
+  .notes { max-width:1200px; margin:0 auto; padding:0 16px; color:var(--muted); font-size:13px; }
+  .notes b { color:var(--text); font-weight:600; }
+  pre#log { max-width:1168px; margin:10px auto; padding:10px 12px; background:#0a0c10; border:1px solid var(--line); border-radius:10px; white-space:pre-wrap; font-size:12px; color:#c6cbd4; display:none; max-height:220px; overflow:auto; }
+  main { max-width:1200px; margin:auto; padding:8px 16px 40px; }
+  h2 { font-size:16px; color:var(--muted); font-weight:600; margin:22px 0 10px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; display:flex; flex-direction:column; }
+  video { width:100%; aspect-ratio:9/16; background:#000; display:block; }
+  .body { padding:12px; display:flex; flex-direction:column; gap:8px; }
+  .title { font-weight:700; }
+  .meta { color:var(--muted); font-size:13px; }
+  .tags { color:#8ab4ff; font-size:13px; word-break:break-word; }
+  .row { display:flex; flex-wrap:wrap; gap:6px; }
+  .row button, .row a.btn { padding:7px 10px; font-size:13px; }
+  .empty { color:var(--muted); padding:30px 0; }
+  .hidden { display:none !important; }
+  .notes a { color:var(--accent); }
+  @media (max-width: 640px) {
+    header { padding:calc(14px + env(safe-area-inset-top)) 16px 4px; }
+    .grid { grid-template-columns:1fr; }
+    .bar button { flex:1 1 100%; justify-content:center; min-height:48px; }
+    .row button, .row a.btn { flex:1 1 calc(50% - 6px); justify-content:center; min-height:44px; font-size:14px; }
+    .row a.btn.big, .row button.big { flex-basis:calc(50% - 6px); font-weight:700; }
+    video { max-height:78vh; }
+  }
+  .row .big { background:var(--accent); color:#111; border-color:var(--accent); font-weight:700; }
+  .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--accent); color:#111; padding:8px 14px; border-radius:20px; font-weight:600; display:none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Reel <span>Maker</span></h1>
+  <p class="sub">Today's trending searches, turned into ready-to-post vertical reels.</p>
+</header>
+<div class="bar" id="bar">
+  <input id="topic" placeholder="Optional: make a reel about your own topic">
+  <button class="primary" id="make">Make today's reels</button>
+</div>
+<p class="notes" id="settings"></p>
+<p class="notes hidden" id="cloudnote"></p>
+<pre id="log"></pre>
+<main id="list"><p class="empty">Loading...</p></main>
+<div class="toast" id="toast"></div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let reels = [], wasRunning = false;
+const STATIC = window.REEL_STATIC || null;   // set on the published phone page
+
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.style.display="block"; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display="none",1600); }
+async function copy(text, label){
+  try { await navigator.clipboard.writeText(text); }
+  catch { const a=document.createElement("textarea"); a.value=text; document.body.appendChild(a); a.select(); document.execCommand("copy"); a.remove(); }
+  toast(label + " copied");
+}
+async function share(i){
+  const r = reels[i];
+  try {
+    const blob = await (await fetch(r.video_url)).blob();
+    const file = new File([blob], (r.id.replace(/\//g,"-")) + ".mp4", {type:"video/mp4"});
+    if (navigator.canShare && navigator.canShare({files:[file]})) {
+      await copy(r.caption_full, "Caption");
+      await navigator.share({files:[file], title:r.title, text:r.caption_full});
+      return;
+    }
+  } catch(e) { if (e.name === "AbortError") return; }
+  toast("Sharing isn't available here. Use Download, then post from your gallery.");
+}
+
+const dl = u => STATIC ? u : u + "?download=1";
+const fname = (r, ext) => r.id.replace(/\//g, "-") + "." + ext;
+
+function render(){
+  if (!reels.length){ $("#list").innerHTML='<p class="empty">No reels yet. Press "Make today\'s reels".</p>'; return; }
+  const byDate = {};
+  reels.forEach((r,i)=>{ (byDate[r.date] ||= []).push(i); });
+  $("#list").innerHTML = Object.keys(byDate).sort().reverse().map(d => `
+    <h2>${esc(d)}</h2><div class="grid">${byDate[d].map(i => { const r = reels[i]; return `
+      <div class="card">
+        <video src="${esc(r.video_url)}" poster="${esc(r.cover_url)}" controls playsinline preload="none"></video>
+        <div class="body">
+          <div class="title">${esc(r.title)}</div>
+          <div class="meta">${r.custom ? "Your topic" : "#" + r.rank + " trend"}: ${esc(r.topic)}${r.traffic ? " · " + esc(r.traffic) + " searches" : ""}</div>
+          <div class="tags">${esc(r.hashtags.join(" "))}</div>
+          <div class="row">
+            <a class="btn big" href="${esc(dl(r.video_url))}" download="${esc(fname(r, "mp4"))}">Download</a>
+            <button class="big" onclick="share(${i})">Share</button>
+          </div>
+          <div class="row">
+            <button onclick="copy(reels[${i}].title,'Title')">Copy title</button>
+            <button onclick="copy(reels[${i}].caption_full,'Caption')">Copy caption</button>
+            <button onclick="copy(reels[${i}].hashtags.join(' '),'Hashtags')">Copy hashtags</button>
+            <button onclick="copy(reels[${i}].tags.join(', '),'Tags')">Copy tags</button>
+          </div>
+          <div class="row">
+            <a class="btn" href="${esc(dl(r.cover_url))}" download="${esc(fname(r, "jpg"))}">Cover image</a>
+            <a class="btn" href="${esc(dl(r.post_url))}" download="${esc(fname(r, "txt"))}">All text (.txt)</a>
+          </div>
+        </div>
+      </div>`; }).join("")}</div>`).join("");
+}
+
+async function loadReels(){ reels = (await (await fetch(STATIC ? "data/reels.json?t=" + Date.now() : "/api/reels")).json()).reels; render(); }
+
+async function poll(){
+  const s = await (await fetch("/api/status")).json();
+  const st = s.settings;
+  $("#settings").innerHTML = [
+    `Trends: <b>Google Trends (${esc(st.geo)})</b>`,
+    `Videos: <b>${st.pexels || st.pixabay ? [st.pexels && "Pexels", st.pixabay && "Pixabay"].filter(Boolean).join(" + ") : "animated backgrounds (add a free Pexels key for real footage)"}</b>`,
+    `Captions: <b>${st.ai ? "AI written" : "built from news headlines"}</b>`,
+    st.daily_time ? `Auto-makes <b>${st.count}</b> reels daily at <b>${esc(st.daily_time)}</b> while this app is open` : "Daily auto-make is off",
+  ].join(" &nbsp;·&nbsp; ");
+  $("#make").disabled = s.running;
+  $("#make").textContent = s.running ? "Making reels..." : "Make today's reels";
+  if (s.log) { $("#log").style.display = "block"; $("#log").textContent = s.log; $("#log").scrollTop = 1e9; }
+  if (wasRunning && !s.running) loadReels();
+  wasRunning = s.running;
+}
+
+$("#make").onclick = async () => {
+  const topic = $("#topic").value.trim();
+  await fetch("/api/make", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({topic})});
+  $("#topic").value = ""; poll();
+};
+$("#topic").addEventListener("keydown", e => { if (e.key === "Enter") $("#make").click(); });
+$("#make").textContent = "Make today's reels";
+if (STATIC) {
+  $("#bar").classList.add("hidden");
+  $("#settings").innerHTML = `New reels arrive every day${STATIC.updated ? " · last update <b>" + esc(STATIC.updated) + "</b>" : ""}`;
+  if (STATIC.run_url) { $("#cloudnote").classList.remove("hidden");
+    $("#cloudnote").innerHTML = `Want more now, or a reel on your own topic? <a href="${esc(STATIC.run_url)}">Open "Daily reels" on GitHub</a> and tap <b>Run workflow</b>.`; }
+  loadReels();
+} else { loadReels(); poll(); setInterval(poll, 2500); }
+</script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+# Makes new reels every day on GitHub's free servers and publishes them to your phone page
+# (https://<your-github-name>.github.io/<repo-name>/). No computer needed.
+name: Daily reels
+on:
+  schedule:
+    - cron: "30 2 * * *"   # 02:30 UTC every day = 08:00 in India. Change to suit you.
+  workflow_dispatch:
+    inputs:
+      topic:
+        description: "Optional: make a reel about this topic instead of today's trends"
+        required: false
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: daily-reels
+  cancel-in-progress: false
+jobs:
+  make:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements.txt
+      - name: Bring back the last few days of reels
+        uses: actions/cache/restore@v4
+        with:
+          path: output
+          key: reels-${{ github.run_id }}
+          restore-keys: reels-
+      - name: Make reels
+        continue-on-error: true
+        env:
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TRENDS_GEO: ${{ vars.TRENDS_GEO || 'US' }}
+          REELS_PER_DAY: ${{ vars.REELS_PER_DAY || '3' }}
+          HANDLE: ${{ vars.HANDLE }}
+          TOPIC: ${{ inputs.topic }}
+        run: |
+          if [ -n "$TOPIC" ]; then python -m reelmaker make --topic "$TOPIC"; else python -m reelmaker make; fi
+      - run: python -m reelmaker site --keep-days 7
+      - uses: actions/cache/save@v4
+        with:
+          path: output
+          key: reels-${{ github.run_id }}
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: site }
+      - id: deploy
+        uses: actions/deploy-pages@v4
