@@ -41,12 +41,19 @@ HASHTAGS = {"geopolitics": ["#worldnews", "#politics", "#geopolitics"], "footbal
             "entertainment": ["#entertainment", "#celebrity", "#entertainmentnews"], "crime": ["#crime", "#truecrime", "#crimenews"]}
 
 
+# Searches that are about a website, a puzzle or a price rather than a story
+GENERIC = {"news", "today", "nyt", "hints", "wordle", "connections", "strands", "crossword", "weather", "horoscope",
+           "lottery", "powerball", "mega", "stock", "stocks", "price", "prices", "login", "app", "score", "scores"}
+
+
 def _count(text, words):
     return sum(len(re.findall(rf"\b{re.escape(w)}\b", text)) for w in words)
 
 
 def classify(trend, ctx=None):
     """The best-fitting allowed category, or None when the trend fits none of them."""
+    if set(re.findall(r"[a-z]+", trend["topic"].lower())) & GENERIC:
+        return None
     news = " ".join([trend["topic"]] + [a["title"] + " " + a.get("summary", "")
                                          for a in ((ctx or {}).get("articles") or trend["news"])]).lower()
     wiki = ((ctx or {}).get("wiki") or {}).get("extract", "")[:300].lower()
