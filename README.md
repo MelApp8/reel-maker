@@ -1,6 +1,6 @@
 # Reel Maker
 
-Every day it picks up the top trending Google searches and turns each one into a ready-to-post vertical reel (1080x1920 MP4, 18 seconds) with on-screen captions, stock footage, a title, a post caption, hashtags and YouTube tags. You download or share them from a small app in your browser.
+Every day it picks up the top trending Google searches and turns each one into a ready-to-post vertical reel (1080x1920 MP4, about 20 seconds). Each reel shows real photos of the topic and explains who or what it is and why it is trending, and comes with a title, post caption, hashtags and YouTube tags. You download or share them from a small app in your browser.
 
 ## Use it from your phone only (no computer)
 
@@ -8,7 +8,7 @@ GitHub runs the app for free every morning and publishes your reels to your own 
 
 1. Put this folder in a public GitHub repository named `reel-maker`. Free GitHub accounts can only publish pages from public repos. Your API keys stay secret either way.
 2. In the repo go to **Settings > Pages** and set **Source** to **GitHub Actions**.
-3. In **Settings > Secrets and variables > Actions**, add the secret `PEXELS_API_KEY`. Optionally add `ANTHROPIC_API_KEY` too. Under the **Variables** tab you can set `TRENDS_GEO` (e.g. `IN`), `REELS_PER_DAY` and `HANDLE`.
+3. Optional: in **Settings > Secrets and variables > Actions**, add `ANTHROPIC_API_KEY` to have Claude write the captions (otherwise GitHub's free AI models write them). Under the **Variables** tab you can set `TRENDS_GEO` (e.g. `IN`), `REELS_PER_DAY` and `HANDLE`.
 4. Open **Actions > Daily reels > Run workflow** once to make the first batch. After that it runs every day at 08:00 India time; change the `cron` line in `.github/workflows/daily-reels.yml` for another time.
 5. Open your page on your phone and tap **Add to Home Screen**, so it opens like an app. Each reel has Download, Share (straight to Instagram, WhatsApp, YouTube) and copy buttons for the title, caption, hashtags and tags.
 
@@ -21,7 +21,7 @@ The page keeps the last 7 days of reels. To make a reel about your own topic, ru
 3. Double-click **start-windows.bat** (Windows) or **start-mac-linux.command** (Mac/Linux). The first run installs what it needs (including ffmpeg) and opens the app at http://localhost:8765.
 4. Press **Make today's reels**.
 
-Without any keys it already works: captions come from today's news headlines and the background is animated. For real video footage, add a free key (next section).
+No keys are needed: photos come from Wikipedia and Openverse, and captions are built from Wikipedia and the news. Add an Anthropic key for AI-written captions.
 
 ## Settings (`.env` file)
 
@@ -29,8 +29,6 @@ Open `.env` in any text editor:
 
 | Setting | What it does |
 |---|---|
-| `PEXELS_API_KEY` | Free key from https://www.pexels.com/api/ for real stock footage matching each trend. Recommended. |
-| `PIXABAY_API_KEY` | Optional second free footage source. |
 | `ANTHROPIC_API_KEY` | Optional. Claude writes a sharper hook, slide captions, title, hashtags and tags. A few cents a day. |
 | `TRENDS_GEO` | Country for trends: `US`, `IN`, `GB`, `CA`, `AU`... |
 | `REELS_PER_DAY` | How many reels per day (default 3). |
@@ -45,7 +43,7 @@ Restart the app after changing `.env`.
 Saved in `output/<date>/<rank>-<topic>/`:
 - `reel.mp4`: vertical video, ready for Instagram Reels, YouTube Shorts and TikTok
 - `cover.jpg`: thumbnail
-- `post.txt`: title, caption, hashtags, tags, video credits and the news links (check the facts before posting)
+- `post.txt`: title, caption, hashtags, tags, photo credits and the news links (check the facts before posting)
 
 In the app each reel has **Download video**, **Share** (sends the video to Instagram/WhatsApp etc. from your phone's share menu where the browser supports it), and **Copy title / caption / hashtags / tags** buttons.
 
@@ -67,11 +65,13 @@ python -m reelmaker site                     # build the phone page into site/
 
 - Add trending audio inside Instagram/TikTok when you post. The reels carry silent audio by default so you can pick what's trending that day. To bake in music, put royalty-free tracks (mp3/m4a) in the `music/` folder and one is picked at random.
 - Post early: trends peak within hours.
-- Footage from Pexels and Pixabay is free for commercial use; credits are listed in `post.txt` anyway.
-- Captions built from headlines quote the news, so skim `post.txt` sources before posting.
+- Photos are Creative Commons or public domain. Each reel shows the photo credit on screen and `post.txt` lists them; keep the credits when you post.
+- Captions come from the news and Wikipedia, so skim the sources in `post.txt` before posting.
 
 ## Where things come from
 
 - Trends: Google Trends daily trending searches RSS (`trends.google.com/trending/rss`), public and free.
-- Video: Pexels and Pixabay APIs (free, royalty-free).
+- Photos: Wikipedia / Wikimedia Commons and Openverse (Creative Commons, commercial use allowed), only ones labelled with the topic.
+- Context: Wikipedia summaries and the news articles listed by Google Trends.
+- Captions: Claude if you add a key, otherwise GitHub Models (free inside GitHub Actions), otherwise built from the facts above.
 - Font: Inter (SIL Open Font License, see `fonts/`).

@@ -132,8 +132,8 @@ async function poll(){
   const st = s.settings;
   $("#settings").innerHTML = [
     `Trends: <b>Google Trends (${esc(st.geo)})</b>`,
-    `Videos: <b>${st.pexels || st.pixabay ? [st.pexels && "Pexels", st.pixabay && "Pixabay"].filter(Boolean).join(" + ") : "animated backgrounds (add a free Pexels key for real footage)"}</b>`,
-    `Captions: <b>${st.ai ? "AI written" : "built from news headlines"}</b>`,
+    `Photos: <b>Wikipedia and Openverse</b>`,
+    `Captions: <b>${st.ai ? "AI written" : "built from Wikipedia and the news"}</b>`,
     st.daily_time ? `Auto-makes <b>${st.count}</b> reels daily at <b>${esc(st.daily_time)}</b> while this app is open` : "Daily auto-make is off",
   ].join(" &nbsp;·&nbsp; ");
   $("#make").disabled = s.running;

@@ -1,9 +1,10 @@
-"""The daily job: trends -> script -> stock clips -> rendered reel + post text."""
+"""The daily job: trends -> photos and context -> script -> rendered reel + post text."""
 import datetime as dt
 import json
 import re
+import shutil
 
-from . import config, media, render, script, trends
+from . import config, render, script, sources, trends
 
 
 def slugify(text):
@@ -26,15 +27,18 @@ def write_post_text(s, path):
 
 def make_reel(trend, rank, day_dir, custom=False):
     print(f"[{rank}] {trend['topic']} ({trend.get('traffic') or 'n/a'} searches)")
-    s = script.write_script(trend)
-    clips = media.find_clips(s["video_queries"], n=min(4, len(s["slides"])))
-    if not clips:
-        print("  - no stock clips (add PEXELS_API_KEY to .env); using an animated background")
+    ctx = sources.gather(trend)
+    photos = sources.download_images(ctx["images"])
+    if not photos:
+        print("  - skipped: no free-to-use photos found for this topic")
+        return None
+    print(f"  - {len(photos)} photo(s); Wikipedia: {ctx['wiki']['title'] if ctx['wiki'] else 'none'}")
+    s = script.write_script(trend, ctx)
     prefix = "my" if custom else f"{rank:02d}"
-    out_dir = day_dir / f"{prefix}-{slugify(trend['topic'])}"
+    out_dir = day_dir / f"{prefix}-{slugify(s['topic'])}"
     out_dir.mkdir(parents=True, exist_ok=True)
-    reel, cover = render.render(s, clips, out_dir, rank=0 if custom else rank)
-    s["credits"] = [f"{c['credit']} {c['page']}".strip() for c in clips]
+    reel, cover = render.render(s, photos, out_dir, rank=0 if custom else rank)
+    s["credits"] = [f"{p['credit']} ({p['source']}) {p['page']}".strip() for p in photos]
     s.update({"rank": rank, "custom": custom, "date": day_dir.name, "video": reel.name, "cover": cover.name,
               "created_at": dt.datetime.now().isoformat(timespec="seconds")})
     (out_dir / "meta.json").write_text(json.dumps(s, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -48,14 +52,21 @@ def make_daily(count=None, geo=None, feed_file=None, topics=None):
     if topics:
         items = [{"topic": t, "traffic": "", "news": []} for t in topics]
     else:
-        items = trends.get_trends(geo=geo, count=count, feed_file=feed_file)
+        items = trends.get_trends(geo=geo, count=count * 4, feed_file=feed_file)
     if not items:
         raise SystemExit("No usable trending topics found right now.")
     day_dir = config.OUTPUT_DIR / dt.date.today().isoformat()
+    if not topics:  # a fresh trends run replaces today's earlier trend reels
+        for old in day_dir.glob("[0-9][0-9]-*"):
+            shutil.rmtree(old, ignore_errors=True)
     made = []
-    for rank, trend in enumerate(items[:count], start=1):
+    for trend in items:
+        if len(made) >= count:
+            break
         try:
-            made.append(make_reel(trend, rank, day_dir, custom=bool(topics)))
+            out = make_reel(trend, len(made) + 1, day_dir, custom=bool(topics))
+            if out:
+                made.append(out)
         except Exception as e:
             print(f"  ! failed: {e}")
     return made

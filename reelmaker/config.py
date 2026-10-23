@@ -28,14 +28,12 @@ def get(name, default=""):
     return os.environ.get(name, default)
 
 
-PEXELS_API_KEY = get("PEXELS_API_KEY")
-PIXABAY_API_KEY = get("PIXABAY_API_KEY")
 ANTHROPIC_API_KEY = get("ANTHROPIC_API_KEY")
 GEO = get("TRENDS_GEO", "US")            # country code for Google Trends: US, IN, GB, CA, AU...
 REELS_PER_DAY = int(get("REELS_PER_DAY", "3"))
 DAILY_TIME = get("DAILY_TIME", "08:00")   # local time the web app makes the day's reels; empty = off
 HANDLE = get("HANDLE", "")                # your @handle, shown as a small watermark
-REEL_SECONDS = float(get("REEL_SECONDS", "18"))
+REEL_SECONDS = float(get("REEL_SECONDS", "20"))
 # Topics containing these words are skipped (tragedies don't make good monetized reels).
 BLOCKLIST = [w.strip().lower() for w in get(
     "BLOCKLIST",

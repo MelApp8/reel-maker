@@ -10,9 +10,10 @@ on:
         description: "Optional: make a reel about this topic instead of today's trends"
         required: false
 permissions:
-  contents: read
+  contents: write      # saves a small preview of each day's reels to the "preview" branch
   pages: write
   id-token: write
+  models: read         # free AI caption writing with GitHub Models
 concurrency:
   group: daily-reels
   cancel-in-progress: false
@@ -31,13 +32,12 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: output
-          key: reels-${{ github.run_id }}
-          restore-keys: reels-
+          key: reels2-${{ github.run_id }}
+          restore-keys: reels2-
       - name: Make reels
         continue-on-error: true
         env:
-          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TRENDS_GEO: ${{ vars.TRENDS_GEO || 'US' }}
           REELS_PER_DAY: ${{ vars.REELS_PER_DAY || '3' }}
@@ -49,7 +49,20 @@ jobs:
       - uses: actions/cache/save@v4
         with:
           path: output
-          key: reels-${{ github.run_id }}
+          key: reels2-${{ github.run_id }}
+      - name: Save a preview (contact sheets + captions) to the preview branch
+        continue-on-error: true
+        run: |
+          mkdir -p /tmp/preview
+          for d in output/$(date -u +%F)/*/; do
+            name=$(basename "$d")
+            ffmpeg -v error -y -i "$d/reel.mp4" -vf "fps=1/3.5,scale=270:480,tile=6x1" -frames:v 1 "/tmp/preview/$name.jpg" || true
+            cp "$d/post.txt" "/tmp/preview/$name.txt" || true
+            cp "$d/meta.json" "/tmp/preview/$name.json" || true
+          done
+          cd /tmp/preview && git init -q -b preview && git add -A
+          git -c user.name=reel-bot -c user.email=reel-bot@users.noreply.github.com commit -q -m "Preview $(date -u +%F)"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" preview
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with: { path: site }

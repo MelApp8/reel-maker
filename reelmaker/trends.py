@@ -56,4 +56,5 @@ def get_trends(geo=None, count=3, feed_file=None):
     """Return the top `count` safe trending topics. `feed_file` lets you test offline."""
     data = open(feed_file, "rb").read() if feed_file else fetch_feed(geo or config.GEO)
     trends = [t for t in parse_feed(data) if is_allowed(t)]
+    trends.sort(key=lambda t: -int(re.sub(r"\D", "", t["traffic"]) or 0))  # biggest searches first
     return trends[:count]

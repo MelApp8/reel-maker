@@ -103,7 +103,6 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"reels": list_reels()})
         elif url.path == "/api/status":
             self._json({"running": state["running"], "log": state["log"], "settings": {
-                "pexels": bool(config.PEXELS_API_KEY), "pixabay": bool(config.PIXABAY_API_KEY),
                 "ai": bool(config.ANTHROPIC_API_KEY), "geo": config.GEO, "count": config.REELS_PER_DAY,
                 "daily_time": config.DAILY_TIME, "handle": config.HANDLE}})
         elif url.path in ("/manifest.webmanifest", "/icon-192.png", "/icon-512.png"):
