@@ -43,7 +43,7 @@ HASHTAGS = {"geopolitics": ["#worldnews", "#politics", "#geopolitics"], "footbal
 
 # Searches that are about a website, a puzzle or a price rather than a story
 GENERIC = {"news", "today", "nyt", "hints", "wordle", "connections", "strands", "crossword", "weather", "horoscope",
-           "lottery", "powerball", "mega", "stock", "stocks", "price", "prices", "login", "app", "score", "scores"}
+           "lottery", "powerball", "mega", "stock", "stocks", "price", "prices", "login", "app", "times", "post", "journal", "score", "scores"}
 
 
 def _count(text, words):
