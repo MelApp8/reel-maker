@@ -54,9 +54,10 @@ jobs:
         continue-on-error: true
         run: |
           mkdir -p /tmp/preview
+          ffmpeg=$(python -c "import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())")
           for d in output/$(date -u +%F)/*/; do
             name=$(basename "$d")
-            ffmpeg -v error -y -i "$d/reel.mp4" -vf "fps=1/3.5,scale=270:480,tile=6x1" -frames:v 1 "/tmp/preview/$name.jpg" || true
+            "$ffmpeg" -v error -y -i "$d/reel.mp4" -vf "fps=1/3.5,scale=270:480,tile=6x1" -frames:v 1 "/tmp/preview/$name.jpg" || true
             cp "$d/post.txt" "/tmp/preview/$name.txt" || true
             cp "$d/meta.json" "/tmp/preview/$name.json" || true
           done

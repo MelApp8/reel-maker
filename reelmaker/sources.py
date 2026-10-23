@@ -90,7 +90,7 @@ def commons_images(files, limit=5):
 
 def openverse_images(query, limit=4):
     q = urllib.parse.urlencode({"q": query, "license_type": "commercial", "page_size": 20, "mature": "false"})
-    data = _get_json(f"https://api.openverse.org/v1/images/?{q}")
+    data = json.loads(_get(f"https://api.openverse.org/v1/images/?{q}", timeout=40).decode("utf-8"))
     want = _words(query)
     out = []
     for r in data.get("results", []):
@@ -128,6 +128,21 @@ def article_summary(url):
             if len(text) > 40:
                 return text[:400]
     return ""
+
+
+def images_for_articles(titles):
+    """Lead photos from specific Wikipedia articles (used for news-style trends)."""
+    out = []
+    for t in titles:
+        try:
+            wiki = wikipedia(t)
+            if wiki:
+                out += commons_images(wiki["files"], limit=2)
+        except Exception as e:
+            print(f"  ! Wikipedia lookup for '{t}' failed: {e}")
+        if len(out) >= 4:
+            break
+    return out
 
 
 def gather(trend):

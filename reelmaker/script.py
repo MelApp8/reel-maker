@@ -1,6 +1,7 @@
 """Turns a trending topic into on-screen captions, a title, a post caption, hashtags and tags."""
 import json
 import re
+import urllib.error
 import urllib.request
 
 from . import config
@@ -133,7 +134,13 @@ def _prompt(trend, ctx, name):
     )
 
 
-def claude_script(trend, ctx, name):
+def _parse_json(text):
+    text = text.strip()
+    m = re.search(r"\{.*\}", text, re.S)  # tolerate ```json fences or chatter around the object
+    return json.loads(m.group(0) if m else text)
+
+
+def _claude_json(prompt, schema):
     import anthropic
 
     client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
@@ -142,49 +149,81 @@ def claude_script(trend, ctx, name):
         max_tokens=4000,
         betas=["server-side-fallback-2026-07-01"],
         fallbacks="default",
-        output_config={"effort": "low", "format": {"type": "json_schema", "schema": SCHEMA}},
-        messages=[{"role": "user", "content": _prompt(trend, ctx, name)}],
+        output_config={"effort": "low", "format": {"type": "json_schema", "schema": schema}},
+        messages=[{"role": "user", "content": prompt}],
     )
     if response.stop_reason == "refusal":
         raise RuntimeError("Claude declined this topic")
     return json.loads(next(b.text for b in response.content if b.type == "text"))
 
 
-def github_models_script(trend, ctx, name):
-    """Free AI writing inside GitHub Actions (uses the workflow's own token, no signup)."""
+def _github_models_json(prompt, schema):
+    """Free AI inside GitHub Actions (uses the workflow's own token, no signup)."""
     body = {
         "model": config.get("GITHUB_MODEL", "openai/gpt-4.1-mini"),
         "response_format": {"type": "json_object"},
         "messages": [
-            {"role": "system", "content": "Reply with JSON only, matching this JSON schema: " + json.dumps(SCHEMA)},
-            {"role": "user", "content": _prompt(trend, ctx, name)},
+            {"role": "system", "content": "Reply with one JSON object only, no other text. It must match this "
+                                          "JSON schema: " + json.dumps(schema)},
+            {"role": "user", "content": prompt},
         ],
     }
     req = urllib.request.Request(
         "https://models.github.ai/inference/chat/completions", data=json.dumps(body).encode(),
         headers={"Authorization": f"Bearer {config.get('GITHUB_TOKEN')}", "Content-Type": "application/json",
-                 "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"})
-    with urllib.request.urlopen(req, timeout=60) as resp:
-        data = json.loads(resp.read().decode())
-    return json.loads(data["choices"][0]["message"]["content"])
+                 "Accept": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            raw = resp.read().decode("utf-8", "ignore")
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(f"HTTP {e.code}: {e.read().decode('utf-8', 'ignore')[:200]}")
+    try:
+        content = json.loads(raw)["choices"][0]["message"]["content"]
+    except (ValueError, KeyError, IndexError):
+        raise RuntimeError(f"unexpected reply: {raw[:200]!r}")
+    return _parse_json(content)
+
+
+def ai_json(prompt, schema):
+    """Ask whichever AI is available. Returns (result, label) or (None, None)."""
+    writers = []
+    if config.ANTHROPIC_API_KEY:
+        writers.append(("Claude", _claude_json))
+    if config.get("GITHUB_TOKEN"):
+        writers.append(("GitHub Models", _github_models_json))
+    for label, writer in writers:
+        try:
+            return writer(prompt, schema), label
+        except Exception as e:
+            print(f"  ! {label} failed ({e})")
+    return None, None
+
+
+IMAGE_SCHEMA = {
+    "type": "object",
+    "properties": {"articles": {"type": "array", "items": {"type": "string"},
+                                "description": "2-3 exact English Wikipedia article titles whose photos fit this story"}},
+    "required": ["articles"], "additionalProperties": False,
+}
+
+
+def photo_articles(trend):
+    """For news-style trends with no article of their own, ask AI which Wikipedia articles would picture it."""
+    news = "\n".join(f"- {n['title']}" for n in trend["news"][:3])
+    result, _ = ai_json(
+        f"Trending search: {trend['topic']}\nHeadlines:\n{news}\n\nName 2-3 existing English Wikipedia articles "
+        "(exact titles) about the main people, organisations or places in this story, most relevant first. "
+        "Their lead photos will illustrate a short news reel.", IMAGE_SCHEMA)
+    return (result or {}).get("articles", [])[:3]
 
 
 def write_script(trend, ctx=None):
     name = display_name(trend, ctx)
-    writers = []
-    if config.ANTHROPIC_API_KEY:
-        writers.append(("Claude", claude_script))
-    if config.get("GITHUB_TOKEN"):
-        writers.append(("GitHub Models", github_models_script))
-    for label, writer in writers:
-        try:
-            script = writer(trend, ctx, name)
-            if len(script.get("slides", [])) >= 3:
-                script["slides"] = script["slides"][:6]
-                script["writer"] = label
-                print(f"  - script written by {label}")
-                return _finish(script, trend, ctx, name)
-        except Exception as e:
-            print(f"  ! {label} script failed ({e})")
+    script, label = ai_json(_prompt(trend, ctx, name), SCHEMA)
+    if script and len(script.get("slides", [])) >= 3:
+        script["slides"] = script["slides"][:6]
+        script["writer"] = label
+        print(f"  - script written by {label}")
+        return _finish(script, trend, ctx, name)
     print("  - script built from Wikipedia and news (no AI)")
     return template_script(trend, ctx, name)

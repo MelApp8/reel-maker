@@ -28,6 +28,11 @@ def write_post_text(s, path):
 def make_reel(trend, rank, day_dir, custom=False):
     print(f"[{rank}] {trend['topic']} ({trend.get('traffic') or 'n/a'} searches)")
     ctx = sources.gather(trend)
+    if not ctx["images"] and trend["news"]:
+        titles = script.photo_articles(trend)
+        if titles:
+            print(f"  - photos from related articles: {', '.join(titles)}")
+            ctx["images"] = sources.images_for_articles(titles)
     photos = sources.download_images(ctx["images"])
     if not photos:
         print("  - skipped: no free-to-use photos found for this topic")
