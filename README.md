@@ -34,7 +34,10 @@ Open `.env` in any text editor:
 | `REELS_PER_DAY` | How many reels per day (default 3). |
 | `DAILY_TIME` | When the app makes new reels each day, e.g. `08:00`. Works while the app window is open. |
 | `HANDLE` | Your @handle, shown small on every reel and in the caption. |
-| `BLOCKLIST` | Trends with these words are skipped (deaths, crimes, disasters by default) so you don't post about tragedies. |
+| `CATEGORIES` | Which subjects become reels: `geopolitics` (incl. protests and unrest), `football` (soccer and NFL), `entertainment`, `crime`. Other trends are skipped. |
+| `BLOCKLIST` | Trends with these words are always skipped (suicide, funerals by default). |
+| `VOICEOVER` / `VOICE` | A free AI voice reads each caption (`on` by default). Try `en-IN-NeerjaNeural`, `en-GB-RyanNeural`, `en-US-AriaNeural`. |
+| `MUSIC_VOLUME` | Background music level under the voice (default `0.18`). |
 
 Restart the app after changing `.env`.
 
@@ -63,7 +66,7 @@ python -m reelmaker site                     # build the phone page into site/
 
 ## Tips for monetization
 
-- Add trending audio inside Instagram/TikTok when you post. The reels carry silent audio by default so you can pick what's trending that day. To bake in music, put royalty-free tracks (mp3/m4a) in the `music/` folder and one is picked at random.
+- Every reel has a voiceover plus a soft generated music track. To use your own royalty-free music instead, put mp3/m4a files in the `music/` folder and one is picked at random.
 - Post early: trends peak within hours.
 - Photos are Creative Commons or public domain. Each reel shows the photo credit on screen and `post.txt` lists them; keep the credits when you post.
 - Captions come from the news and Wikipedia, so skim the sources in `post.txt` before posting.

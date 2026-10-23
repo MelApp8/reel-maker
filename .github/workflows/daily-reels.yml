@@ -40,6 +40,8 @@ jobs:
           TRENDS_GEO: ${{ vars.TRENDS_GEO || 'US' }}
           REELS_PER_DAY: ${{ vars.REELS_PER_DAY || '3' }}
           HANDLE: ${{ vars.HANDLE }}
+          CATEGORIES: ${{ vars.CATEGORIES }}
+          VOICE: ${{ vars.VOICE }}
           TOPIC: ${{ inputs.topic }}
         run: |
           if [ -n "$TOPIC" ]; then python -m reelmaker make --topic "$TOPIC"; else python -m reelmaker make; fi

@@ -1,3 +1,5 @@
 Pillow>=10
 imageio-ffmpeg>=0.5
 anthropic>=1.0   # optional: only used if you add ANTHROPIC_API_KEY for AI-written captions
+numpy>=1.24
+edge-tts>=7.0   # free voiceover (Microsoft Edge read-aloud voices), no key

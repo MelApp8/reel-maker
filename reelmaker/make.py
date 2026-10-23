@@ -4,7 +4,7 @@ import json
 import re
 import shutil
 
-from . import config, render, script, sources, trends
+from . import config, render, script, sources, topics, trends
 
 
 def slugify(text):
@@ -28,6 +28,13 @@ def write_post_text(s, path):
 def make_reel(trend, rank, day_dir, custom=False):
     print(f"[{rank}] {trend['topic']} ({trend.get('traffic') or 'n/a'} searches)")
     ctx = sources.gather(trend)
+    category = None
+    if not custom:
+        category = topics.classify(trend, ctx)
+        if not category:
+            print("  - skipped: not geopolitics, football, entertainment or crime")
+            return None
+        print(f"  - category: {category}")
     if not ctx["images"] and trend["news"]:
         titles = script.photo_articles(trend)
         if titles:
@@ -39,6 +46,11 @@ def make_reel(trend, rank, day_dir, custom=False):
         return None
     print(f"  - {len(photos)} photo(s); Wikipedia: {ctx['wiki']['title'] if ctx['wiki'] else 'none'}")
     s = script.write_script(trend, ctx)
+    if category:
+        s["category"] = topics.LABELS.get(category, category)
+        tags = [h for h in topics.HASHTAGS.get(category, []) if h not in s["hashtags"]]
+        s["hashtags"] = (s["hashtags"][:1] + tags + s["hashtags"][1:])[:15]
+        s["caption_full"] = s["caption_full"].rsplit("\n\n", 1)[0] + "\n\n" + " ".join(s["hashtags"])
     prefix = "my" if custom else f"{rank:02d}"
     out_dir = day_dir / f"{prefix}-{slugify(s['topic'])}"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -57,7 +69,7 @@ def make_daily(count=None, geo=None, feed_file=None, topics=None):
     if topics:
         items = [{"topic": t, "traffic": "", "news": []} for t in topics]
     else:
-        items = trends.get_trends(geo=geo, count=count * 4, feed_file=feed_file)
+        items = trends.get_trends(geo=geo, count=100, feed_file=feed_file)
     if not items:
         raise SystemExit("No usable trending topics found right now.")
     day_dir = config.OUTPUT_DIR / dt.date.today().isoformat()

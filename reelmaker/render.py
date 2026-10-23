@@ -1,4 +1,4 @@
-"""Renders a 1080x1920 MP4 reel with ffmpeg: real photos with slow zoom, captions, progress bar, music."""
+"""Renders a 1080x1920 MP4 reel with ffmpeg: real photos with slow zoom, captions, progress bar, voiceover and music."""
 import random
 import shutil
 import subprocess
@@ -6,7 +6,7 @@ import textwrap
 
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageOps
 
-from . import config
+from . import audio, config
 
 W, H, FPS = config.W, config.H, config.FPS
 ACCENT = (255, 212, 0)        # yellow
@@ -112,9 +112,12 @@ def header_png(path, name, handle):
     img.save(path)
 
 
-def _durations(slides, total):
+def _durations(slides, total, voice_lens=None):
     weights = [len(s["text"]) + 35 for s in slides]
-    return [max(2.6, total * w / sum(weights)) for w in weights]
+    durs = [max(2.6, total * w / sum(weights)) for w in weights]
+    if voice_lens:  # every caption stays up until its voiceover has finished
+        durs = [max(d, v + 0.5) if v else d for d, v in zip(durs, voice_lens)]
+    return durs
 
 
 def render(script, photos, out_dir, rank=1):
@@ -124,7 +127,15 @@ def render(script, photos, out_dir, rank=1):
     work = out_dir / "_work"
     work.mkdir(parents=True, exist_ok=True)
     slides = script["slides"]
-    durs = _durations(slides, config.REEL_SECONDS)
+    voices = []
+    if config.VOICEOVER:
+        for i, sl in enumerate(slides):
+            path = work / f"voice{i}.mp3"
+            voices.append((path, audio.voice(sl["text"], path)))
+            if voices[-1][1] is None:
+                voices = []  # voice service unavailable: music only
+                break
+    durs = _durations(slides, config.REEL_SECONDS, [v for _, v in voices])
     total = sum(durs)
     args, filters, n = [ffmpeg_exe(), "-y", "-hide_banner", "-loglevel", "error"], [], 0
     mask_png(work / "mask.png")
@@ -170,12 +181,24 @@ def render(script, photos, out_dir, rank=1):
         n += 1
 
     tracks = [p for p in config.MUSIC_DIR.glob("*") if p.suffix.lower() in (".mp3", ".m4a", ".wav", ".aac", ".ogg")]
-    if tracks:
-        args += ["-stream_loop", "-1", "-i", str(random.choice(tracks))]
-        filters.append(f"[{n}:a]atrim=duration={total:.3f},afade=t=out:st={total - 1.5:.3f}:d=1.5,volume=0.8[aout]")
+    track = random.choice(tracks) if tracks else audio.music(work / "music.wav", total + 0.5, seed=rank)
+    args += ["-stream_loop", "-1", "-i", str(track)]
+    level = config.MUSIC_VOLUME if voices else 0.8
+    filters.append(f"[{n}:a]atrim=duration={total:.3f},afade=t=out:st={total - 1.5:.3f}:d=1.5,volume={level},"
+                   f"aformat=sample_rates=44100:channel_layouts=stereo[mus]")
+    n += 1
+    mix, start = ["[mus]"], 0.0
+    for i, ((path, _), seg) in enumerate(zip(voices, durs)):
+        args += ["-i", str(path)]
+        ms = int((start + 0.15) * 1000)
+        filters.append(f"[{n}:a]aformat=sample_rates=44100:channel_layouts=stereo,volume=1.4,adelay={ms}|{ms}[vo{i}]")
+        mix.append(f"[vo{i}]")
+        start += seg
+        n += 1
+    if voices:
+        filters.append("".join(mix) + f"amix=inputs={len(mix)}:normalize=0:duration=first[aout]")
     else:
-        args += ["-f", "lavfi", "-t", f"{total:.3f}", "-i", "anullsrc=r=44100:cl=stereo"]
-        filters.append(f"[{n}:a]anull[aout]")
+        filters.append("[mus]anull[aout]")
 
     reel = out_dir / "reel.mp4"
     args += ["-filter_complex", ";".join(filters), "-map", f"[{last}]", "-map", "[aout]", "-t", f"{total:.3f}",

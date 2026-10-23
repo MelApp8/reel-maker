@@ -25,7 +25,7 @@ _load_dotenv()
 
 
 def get(name, default=""):
-    return os.environ.get(name, default)
+    return os.environ.get(name) or default
 
 
 ANTHROPIC_API_KEY = get("ANTHROPIC_API_KEY")
@@ -35,10 +35,13 @@ DAILY_TIME = get("DAILY_TIME", "08:00")   # local time the web app makes the day
 HANDLE = get("HANDLE", "")                # your @handle, shown as a small watermark
 REEL_SECONDS = float(get("REEL_SECONDS", "20"))
 # Topics containing these words are skipped (tragedies don't make good monetized reels).
-BLOCKLIST = [w.strip().lower() for w in get(
-    "BLOCKLIST",
-    "died,dies,death,dead,killed,shooting,shot,murder,crash,obituary,funeral,suicide,"
-    "attack,victim,missing,arrested,war,earthquake,abuse",
-).split(",") if w.strip()]
+# Only trends in these subjects become reels: geopolitics (incl. protests and unrest), football, entertainment, crime
+CATEGORIES = [c.strip().lower() for c in get("CATEGORIES", "geopolitics,football,entertainment,crime").split(",") if c.strip()]
+# Trends with these words are always skipped
+BLOCKLIST = [w.strip().lower() for w in get("BLOCKLIST", "suicide,obituary,funeral,abuse").split(",") if w.strip()]
+VOICEOVER = get("VOICEOVER", "on").lower() not in ("0", "off", "no", "false")
+VOICE = get("VOICE", "en-US-AndrewNeural")       # any Microsoft Edge voice, e.g. en-IN-NeerjaNeural, en-GB-RyanNeural
+VOICE_RATE = get("VOICE_RATE", "+8%")
+MUSIC_VOLUME = float(get("MUSIC_VOLUME", "0.18"))  # background music level under the voice
 
 W, H, FPS = 1080, 1920, 30
