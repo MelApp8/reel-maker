@@ -29,7 +29,7 @@ def display_name(trend, ctx):
 
 
 def _first_sentences(text, limit=150):
-    sents = re.split(r"(?<!\bNo)(?<!\bMr)(?<!\bMs)(?<!\bDr)(?<!\bSt)(?<!\bJr)(?<!\bvs)(?<!\bU\.S)(?<=[.!?])\s+", re.sub(r"\s*\([^)]*\)", "", text or "").strip())
+    sents = re.split(r"(?<!\bNo\.)(?<!\bMr\.)(?<!\bMs\.)(?<!\bDr\.)(?<!\bSt\.)(?<!\bJr\.)(?<!\bvs\.)(?<!\bU\.S\.)(?<=[.!?])\s+", re.sub(r"\s*\([^)]*\)", "", text or "").strip())
     out = ""
     for sent in sents:
         if out and len(out) + len(sent) > limit:
