@@ -8,7 +8,7 @@ GitHub runs the app for free every morning and publishes your reels to your own 
 
 1. Put this folder in a public GitHub repository named `reel-maker`. Free GitHub accounts can only publish pages from public repos. Your API keys stay secret either way.
 2. In the repo go to **Settings > Pages** and set **Source** to **GitHub Actions**.
-3. Optional: in **Settings > Secrets and variables > Actions**, add `ANTHROPIC_API_KEY` to have Claude write the captions (otherwise GitHub's free AI models write them). Under the **Variables** tab you can set `TRENDS_GEO` (e.g. `IN`), `REELS_PER_DAY` and `HANDLE`.
+3. Optional: in **Settings > Secrets and variables > Actions**, add `ANTHROPIC_API_KEY` to have Claude write the captions (otherwise they are built from Wikipedia and the news). Under the **Variables** tab you can set `TRENDS_GEO` (e.g. `IN`), `REELS_PER_DAY` and `HANDLE`.
 4. Open **Actions > Daily reels > Run workflow** once to make the first batch. After that it runs every day at 08:00 India time; change the `cron` line in `.github/workflows/daily-reels.yml` for another time.
 5. Open your page on your phone and tap **Add to Home Screen**, so it opens like an app. Each reel has Download, Share (straight to Instagram, WhatsApp, YouTube) and copy buttons for the title, caption, hashtags and tags.
 
@@ -73,5 +73,5 @@ python -m reelmaker site                     # build the phone page into site/
 - Trends: Google Trends daily trending searches RSS (`trends.google.com/trending/rss`), public and free.
 - Photos: Wikipedia / Wikimedia Commons and Openverse (Creative Commons, commercial use allowed), only ones labelled with the topic.
 - Context: Wikipedia summaries and the news articles listed by Google Trends.
-- Captions: Claude if you add a key, otherwise GitHub Models (free inside GitHub Actions), otherwise built from the facts above.
+- Captions: Claude if you add a key, otherwise built from the facts above.
 - Font: Inter (SIL Open Font License, see `fonts/`).

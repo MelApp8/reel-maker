@@ -1,8 +1,6 @@
 """Turns a trending topic into on-screen captions, a title, a post caption, hashtags and tags."""
 import json
 import re
-import urllib.error
-import urllib.request
 
 from . import config
 
@@ -31,7 +29,7 @@ def display_name(trend, ctx):
 
 
 def _first_sentences(text, limit=150):
-    sents = re.split(r"(?<=[.!?])\s+", re.sub(r"\s*\([^)]*\)", "", text or "").strip())
+    sents = re.split(r"(?<!\bNo)(?<!\bMr)(?<!\bMs)(?<!\bDr)(?<!\bSt)(?<!\bJr)(?<!\bvs)(?<!\bU\.S)(?<=[.!?])\s+", re.sub(r"\s*\([^)]*\)", "", text or "").strip())
     out = ""
     for sent in sents:
         if out and len(out) + len(sent) > limit:
@@ -157,40 +155,11 @@ def _claude_json(prompt, schema):
     return json.loads(next(b.text for b in response.content if b.type == "text"))
 
 
-def _github_models_json(prompt, schema):
-    """Free AI inside GitHub Actions (uses the workflow's own token, no signup)."""
-    body = {
-        "model": config.get("GITHUB_MODEL", "openai/gpt-4.1-mini"),
-        "response_format": {"type": "json_object"},
-        "messages": [
-            {"role": "system", "content": "Reply with one JSON object only, no other text. It must match this "
-                                          "JSON schema: " + json.dumps(schema)},
-            {"role": "user", "content": prompt},
-        ],
-    }
-    req = urllib.request.Request(
-        "https://models.github.ai/inference/chat/completions", data=json.dumps(body).encode(),
-        headers={"Authorization": f"Bearer {config.get('GITHUB_TOKEN')}", "Content-Type": "application/json",
-                 "Accept": "application/json"})
-    try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            raw = resp.read().decode("utf-8", "ignore")
-    except urllib.error.HTTPError as e:
-        raise RuntimeError(f"HTTP {e.code}: {e.read().decode('utf-8', 'ignore')[:200]}")
-    try:
-        content = json.loads(raw)["choices"][0]["message"]["content"]
-    except (ValueError, KeyError, IndexError):
-        raise RuntimeError(f"unexpected reply: {raw[:200]!r}")
-    return _parse_json(content)
-
-
 def ai_json(prompt, schema):
     """Ask whichever AI is available. Returns (result, label) or (None, None)."""
     writers = []
     if config.ANTHROPIC_API_KEY:
         writers.append(("Claude", _claude_json))
-    if config.get("GITHUB_TOKEN"):
-        writers.append(("GitHub Models", _github_models_json))
     for label, writer in writers:
         try:
             return writer(prompt, schema), label

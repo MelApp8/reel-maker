@@ -13,7 +13,6 @@ permissions:
   contents: write      # saves a small preview of each day's reels to the "preview" branch
   pages: write
   id-token: write
-  models: read         # free AI caption writing with GitHub Models
 concurrency:
   group: daily-reels
   cancel-in-progress: false
@@ -37,7 +36,6 @@ jobs:
       - name: Make reels
         continue-on-error: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TRENDS_GEO: ${{ vars.TRENDS_GEO || 'US' }}
           REELS_PER_DAY: ${{ vars.REELS_PER_DAY || '3' }}
