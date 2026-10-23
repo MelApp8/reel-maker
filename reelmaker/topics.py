@@ -10,7 +10,8 @@ KEYWORDS = {
         "united nations", "military", "troops", "army", "missile", "missiles", "airstrike", "airstrikes", "ceasefire",
         "war", "invasion", "border", "rebels", "coup", "protest", "protests", "protesters", "unrest", "riot", "riots",
         "clashes", "uprising", "crackdown", "martial law", "regime", "nuclear", "white house", "kremlin", "foreign policy",
-        "politician", "political", "geopolitical", "refugees", "strike", "demonstrators", "opposition",
+        "politician", "political", "politics", "geopolitical", "governor", "republican", "republicans", "democrat",
+        "democrats", "midterm", "midterms", "campaign", "trump", "vance", "biden", "putin", "zelensky", "netanyahu", "xi jinping", "modi", "refugees", "strike", "demonstrators", "opposition",
     ],
     "football": [
         "football", "footballer", "soccer", "nfl", "premier league", "la liga", "serie a", "bundesliga", "ligue 1",
@@ -35,7 +36,7 @@ KEYWORDS = {
 OTHER_SPORTS = ["nba", "basketball", "mlb", "baseball", "world series", "nhl", "hockey", "tennis", "atp", "wta",
                 "ufc", "mma", "boxing", "golf", "pga", "nascar", "formula 1", "f1", "cricket", "ipl", "wnba", "ncaa basketball",
                 "rugby", "rugby league", "rugby union", "nrl", "world rugby", "volleyball", "athletics"]
-LABELS = {"geopolitics": "World affairs", "football": "Football", "entertainment": "Entertainment", "crime": "Crime"}
+LABELS = {"geopolitics": "Politics & world", "football": "Football", "entertainment": "Entertainment", "crime": "Crime"}
 HASHTAGS = {"geopolitics": ["#worldnews", "#politics", "#geopolitics"], "football": ["#football", "#soccer", "#nfl"],
             "entertainment": ["#entertainment", "#celebrity", "#entertainmentnews"], "crime": ["#crime", "#truecrime", "#crimenews"]}
 
