@@ -47,7 +47,7 @@ def wikipedia(topic):
             continue
         q = urllib.parse.urlencode({
             "action": "query", "format": "json", "redirects": 1, "titles": r["title"],
-            "prop": "extracts|pageimages|images|info", "exintro": 1, "explaintext": 1, "exsentences": 4,
+            "prop": "extracts|pageimages|images|info", "exintro": 1, "explaintext": 1, "exchars": 700,
             "piprop": "name", "imlimit": 40, "inprop": "url"})
         page = next(iter(_get_json(f"{WIKI_API}?{q}").get("query", {}).get("pages", {}).values()), {})
         extract = (page.get("extract") or "").strip()
