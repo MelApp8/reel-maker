@@ -94,14 +94,17 @@ def caption_png(slide, path, credit=""):
     img.save(path)
 
 
-def header_png(path, rank, handle, traffic=""):
+def header_png(path, name, handle):
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    label = (f"TRENDING #{rank}" if rank else "TRENDING NOW") + (f"  ·  {traffic} SEARCHES" if traffic else "")
+    label = (name or "").upper()
     f = font(36)
-    tw = d.textlength(label, font=f)
-    d.rounded_rectangle(((W - tw) / 2 - 30, 120, (W + tw) / 2 + 30, 186), radius=33, fill=ACCENT_2)
-    d.text(((W - tw) / 2, 132), label, font=f, fill="white")
+    while d.textlength(label, font=f) > W - 200 and len(label) > 10:
+        label = label[:-4] + "..."
+    if label:
+        tw = d.textlength(label, font=f)
+        d.rounded_rectangle(((W - tw) / 2 - 30, 120, (W + tw) / 2 + 30, 186), radius=33, fill=ACCENT_2)
+        d.text(((W - tw) / 2, 132), label, font=f, fill="white")
     if handle:
         hf = font(34, bold=False)
         hw = d.textlength(handle, font=hf)
@@ -146,7 +149,7 @@ def render(script, photos, out_dir, rank=1):
         n += 3
     filters.append("".join(f"[seg{i}]" for i in range(len(slides))) + f"concat=n={len(slides)}:v=1:a=0[base]")
 
-    header_png(work / "header.png", rank, config.HANDLE, script.get("traffic", ""))
+    header_png(work / "header.png", script.get("topic", ""), config.HANDLE)
     args += ["-loop", "1", "-framerate", str(FPS), "-t", f"{total:.3f}", "-i", str(work / "header.png")]
     filters.append(f"[base][{n}:v]overlay=0:0[v0]")
     n += 1

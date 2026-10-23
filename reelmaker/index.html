@@ -55,7 +55,7 @@
 <body>
 <header>
   <h1>Reel <span>Maker</span></h1>
-  <p class="sub">Today's trending searches, turned into ready-to-post vertical reels.</p>
+  <p class="sub">Today's top stories, turned into ready-to-post vertical reels.</p>
 </header>
 <div class="bar" id="bar">
   <input id="topic" placeholder="Optional: make a reel about your own topic">
@@ -105,7 +105,7 @@ function render(){
         <video src="${esc(r.video_url)}" poster="${esc(r.cover_url)}" controls playsinline preload="none"></video>
         <div class="body">
           <div class="title">${esc(r.title)}</div>
-          <div class="meta">${r.custom ? "Your topic" : "#" + r.rank + " trend"}: ${esc(r.topic)}${r.traffic ? " · " + esc(r.traffic) + " searches" : ""}</div>
+          <div class="meta">${esc(r.topic)}</div>
           <div class="tags">${esc(r.hashtags.join(" "))}</div>
           <div class="row">
             <a class="btn big" href="${esc(dl(r.video_url))}" download="${esc(fname(r, "mp4"))}">Download</a>

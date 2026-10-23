@@ -1,6 +1,6 @@
 # Reel Maker
 
-Every day it picks up the top trending Google searches and turns each one into a ready-to-post vertical reel (1080x1920 MP4, about 20 seconds). Each reel shows real photos of the topic and explains who or what it is and why it is trending, and comes with a title, post caption, hashtags and YouTube tags. You download or share them from a small app in your browser.
+Every day it picks up the top trending Google searches and turns each one into a ready-to-post vertical reel (1080x1920 MP4, about 20 seconds). Each reel shows real photos of the topic and explains what is happening and who is involved, and comes with a title, post caption, hashtags and YouTube tags. You download or share them from a small app in your browser.
 
 ## Use it from your phone only (no computer)
 

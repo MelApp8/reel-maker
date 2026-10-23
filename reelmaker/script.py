@@ -4,7 +4,7 @@ import re
 
 from . import config
 
-GENERIC_HASHTAGS = ["#trending", "#trendingnow", "#viral", "#reels", "#explore", "#fyp", "#news", "#todaynews"]
+GENERIC_HASHTAGS = ["#news", "#latestnews", "#todaynews", "#reels", "#explore", "#fyp", "#viral"]
 
 
 def _hashtag(text):
@@ -49,7 +49,7 @@ def _finish(script, trend, ctx, name):
     hashtags = list(dict.fromkeys([_hashtag(name)] + hashtags + GENERIC_HASHTAGS))[:15]
     caption = script["caption"].strip()
     if config.HANDLE and config.HANDLE not in caption:
-        caption += f"\n\nFollow {config.HANDLE} for a new trend every day."
+        caption += f"\n\nFollow {config.HANDLE} for more."
     for sl in script["slides"]:
         sl["kicker"] = _shorten(sl.get("kicker", "").upper(), 30)
         sl["text"] = _shorten(sl["text"], 170)
@@ -72,27 +72,33 @@ def template_script(trend, ctx=None, name=None):
     traffic, news = trend.get("traffic", ""), trend["news"]
     articles = (ctx or {}).get("articles") or [{**n, "summary": ""} for n in news]
     wiki = (ctx or {}).get("wiki")
-    slides = [{"kicker": "QUICK EXPLAINER", "text": f"Why is everyone searching {name} right now?"}]
+    slides = []
+    if articles:  # lead with the news itself
+        a = articles[0]
+        slides.append({"kicker": "WHAT'S HAPPENING", "text": _shorten(a["title"], 115)})
     if wiki:
-        slides.append({"kicker": "WHO / WHAT", "text": _first_sentences(wiki["extract"], 160)})
+        slides.append({"kicker": f"WHO IS {name.upper()}" if len(name) < 22 else "THE BACKGROUND",
+                       "text": _first_sentences(wiki["extract"], 160)})
     if articles:
         a = articles[0]
-        slides.append({"kicker": "WHAT HAPPENED", "text": _shorten(a["title"], 115)})
         if a.get("summary") and a["summary"][:40].lower() not in a["title"].lower():
             slides.append({"kicker": "THE DETAILS", "text": _first_sentences(a["summary"], 160)})
-    if len(articles) > 1 and len(slides) < 5:
+    if len(articles) > 1 and len(slides) < 4:
         slides.append({"kicker": "ALSO", "text": _shorten(articles[1]["title"], 115)})
-    slides.append({"kicker": "YOUR TAKE?", "text": "Comment below and follow for a new trend every day"})
-    lead = articles[0]["title"] if articles else f"{name} is one of today's top searches."
+    if not slides:
+        slides.append({"kicker": "IN THE NEWS", "text": name})
+    slides.append({"kicker": "YOUR TAKE?", "text": "What do you think? Comment below and follow for more"})
+    lead = articles[0]["title"] if articles else name
+    summary = articles[0].get("summary", "") if articles else ""
     words = [w for w in re.findall(r"[A-Za-z0-9]+", name) if len(w) > 2]
     return _finish({
-        "title": _shorten(f"Why is everyone searching {name} today?", 90),
+        "title": _shorten(lead if name.lower() in lead.lower() else f"{name}: {lead}", 95),
         "slides": slides,
-        "caption": f"{name} is trending right now \U0001F525\n\n{_shorten(lead, 200)}\n\n"
-                   f"What do you think? Tell me in the comments \U0001F447",
+        "caption": f"{_shorten(lead, 200)}\n\n" + (f"{_first_sentences(summary, 220)}\n\n" if summary else "")
+                   + "What do you think? Tell me in the comments \U0001F447",
         "hashtags": [_hashtag(w) for w in words] + ["#breakingnews"],
-        "tags": [name, f"{name} news", f"{name} today", f"{name} explained", f"why is {name} trending",
-                 "trending now", "trending news", "news today", "shorts", "reels"] + words,
+        "tags": [name, f"{name} news", f"{name} today", f"{name} explained", f"{name} latest",
+                 "latest news", "news today", "shorts", "reels"] + words,
     }, trend, ctx, name)
 
 
@@ -120,13 +126,14 @@ def _prompt(trend, ctx, name):
     news = "\n".join(f"- {a['title']} ({a['source']})" + (f"\n  Summary: {a['summary']}" if a.get("summary") else "")
                      for a in arts) or "- (none)"
     return (
-        "Write a short vertical reel (about 20 seconds, 5 caption slides) explaining a trending Google search "
-        "to people who have no idea what it is.\n\n"
-        f"Search term: {name}\nSearches today: {trend.get('traffic') or 'unknown'}\n"
+        "Write a short vertical reel (about 20 seconds, 5 caption slides) telling people what is happening "
+        "in this news story, for viewers who have not heard about it yet.\n\n"
+        f"Topic: {name}\n"
         f"Background (Wikipedia): {wiki['extract'] if wiki else '(no article found)'}\n"
         f"Today's news:\n{news}\n\n"
-        "Slides: 1) a hook that makes people stop scrolling, 2) who or what this is, 3) what happened today, "
-        "4) the most interesting detail or why it matters, 5) ask viewers what they think and to follow for daily trends. "
+        "Slides: 1) what is happening, told as a hook that makes people stop scrolling, 2) who or what this is, "
+        "3) the key details, 4) the most interesting detail or why it matters, 5) ask viewers what they think. "
+        "Never mention that it is trending, search numbers or rankings. "
         "Use only facts from the background and news above, never invent numbers, quotes or outcomes. "
         "Write like a friendly news creator: short, clear sentences, no hype words like 'shocking'."
     )
