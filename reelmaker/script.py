@@ -20,6 +20,16 @@ def _shorten(text, limit=95):
     return cut.rstrip(",;:-") + "..."
 
 
+PERSON = re.compile(r"\b(born|actor|actress|singer|rapper|musician|songwriter|footballer|player|coach|manager|politician|"
+                    r"president|minister|businessman|businesswoman|personality|influencer|comedian|presenter|journalist|"
+                    r"author|model|athlete|boxer|fighter|artist|director|producer|lawyer|activist|entrepreneur)\b", re.I)
+JUNK_PREFIX = re.compile(r"^(live( updates)?|watch|video|photos?|licensable picture|breaking|exclusive|opinion|analysis)\s*[:|-]\s*", re.I)
+
+
+def clean_headline(title):
+    return JUNK_PREFIX.sub("", title).strip()
+
+
 def display_name(trend, ctx):
     wiki = (ctx or {}).get("wiki")
     if wiki:
@@ -71,19 +81,21 @@ def template_script(trend, ctx=None, name=None):
     name = name or display_name(trend, ctx)
     traffic, news = trend.get("traffic", ""), trend["news"]
     articles = (ctx or {}).get("articles") or [{**n, "summary": ""} for n in news]
+    articles = [{**a, "title": clean_headline(a["title"])} for a in articles]
     wiki = (ctx or {}).get("wiki")
     slides = []
     if articles:  # lead with the news itself
         a = articles[0]
         slides.append({"kicker": "WHAT'S HAPPENING", "text": _shorten(a["title"], 115)})
     if wiki:
-        slides.append({"kicker": f"WHO IS {name.upper()}" if len(name) < 22 else "THE BACKGROUND",
+        is_person = bool(PERSON.search(wiki["extract"][:200]))
+        slides.append({"kicker": f"WHO IS {name.upper()}" if is_person and len(name) < 22 else "THE BACKGROUND",
                        "text": _first_sentences(wiki["extract"], 160)})
     if articles:
         a = articles[0]
         if a.get("summary") and a["summary"][:40].lower() not in a["title"].lower():
             slides.append({"kicker": "THE DETAILS", "text": _first_sentences(a["summary"], 160)})
-    if len(articles) > 1 and len(slides) < 4:
+    if len(articles) > 1 and len(slides) < 4 and len(articles[1]["title"]) > 30:
         slides.append({"kicker": "ALSO", "text": _shorten(articles[1]["title"], 115)})
     if not slides:
         slides.append({"kicker": "IN THE NEWS", "text": name})

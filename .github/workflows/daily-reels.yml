@@ -59,6 +59,7 @@ jobs:
             name=$(basename "$d")
             "$ffmpeg" -v error -y -i "$d/reel.mp4" -vf "fps=1/3.5,scale=270:480,tile=6x1" -frames:v 1 "/tmp/preview/$name.jpg" || true
             cp "$d/post.txt" "/tmp/preview/$name.txt" || true
+            "$ffmpeg" -hide_banner -i "$d/reel.mp4" -af volumedetect -f null - 2>&1 | grep -E "Duration|mean_volume|max_volume" > "/tmp/preview/$name.audio.txt" || true
             cp "$d/meta.json" "/tmp/preview/$name.json" || true
           done
           cd /tmp/preview && git init -q -b preview && git add -A

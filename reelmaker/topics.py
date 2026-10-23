@@ -33,7 +33,8 @@ KEYWORDS = {
     ],
 }
 OTHER_SPORTS = ["nba", "basketball", "mlb", "baseball", "world series", "nhl", "hockey", "tennis", "atp", "wta",
-                "ufc", "mma", "boxing", "golf", "pga", "nascar", "formula 1", "f1", "cricket", "ipl", "wnba", "ncaa basketball"]
+                "ufc", "mma", "boxing", "golf", "pga", "nascar", "formula 1", "f1", "cricket", "ipl", "wnba", "ncaa basketball",
+                "rugby", "rugby league", "rugby union", "nrl", "world rugby", "volleyball", "athletics"]
 LABELS = {"geopolitics": "World affairs", "football": "Football", "entertainment": "Entertainment", "crime": "Crime"}
 HASHTAGS = {"geopolitics": ["#worldnews", "#politics", "#geopolitics"], "football": ["#football", "#soccer", "#nfl"],
             "entertainment": ["#entertainment", "#celebrity", "#entertainmentnews"], "crime": ["#crime", "#truecrime", "#crimenews"]}
