@@ -89,6 +89,8 @@ def commons_images(files, limit=5):
 # ---------- Openverse (CC-licensed photos, commercial use allowed) ----------
 
 def openverse_images(query, limit=4):
+    if not _words(query):  # too short to check photos against (e.g. "jd"), so don't risk unrelated pictures
+        return []
     q = urllib.parse.urlencode({"q": query, "license_type": "commercial", "page_size": 20, "mature": "false"})
     data = json.loads(_get(f"https://api.openverse.org/v1/images/?{q}", timeout=40).decode("utf-8"))
     want = _words(query)
