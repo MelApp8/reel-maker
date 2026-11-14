@@ -1,0 +1,3 @@
+  Duration: 00:00:24.47, start: 0.000000, bitrate: 1776 kb/s
+[Parsed_volumedetect_0 @ 0x7dfcb0001a40] mean_volume: -20.2 dB
+[Parsed_volumedetect_0 @ 0x7dfcb0001a40] max_volume: -3.1 dB
